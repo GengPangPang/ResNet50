@@ -1,4 +1,4 @@
-ResNet50 + ArcFace + WebFace 112x112 + LFW：超算多卡 DDP 训练版
+# ResNet50 + ArcFace + WebFace 112x112 + LFW：超算多卡 DDP 训练版
 这是一套针对超算 / 服务器多 GPU 训练的完整人脸识别代码。核心配置：
 Backbone：ResNet50
 Loss：ArcFace
