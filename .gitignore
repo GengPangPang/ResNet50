@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+
+# datasets
+data/
+datasets/
+*.jpg
+*.jpeg
+*.png
+
+# training outputs
+results/
+runs/
+logs/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+
+# archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# system/editor
+.DS_Store
+.vscode/
+.idea/
