@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-# User datasets are all .jpg. Only scan .jpg files.
+# Your datasets are all .jpg. Only scan .jpg files.
 IMG_EXTENSIONS = (".jpg",)
 
 
@@ -34,24 +34,40 @@ def pil_loader(path: str) -> Image.Image:
         return image.convert("RGB")
 
 
+def natural_key(name: str):
+    """
+    Natural sort key.
+
+    Example:
+        id_2 comes before id_10.
+    """
+    import re
+    return [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", name)]
+
+
 class WebFaceFolder(Dataset):
     """
     Folder-style WebFace/CASIA-WebFace dataset.
 
     Expected:
         root/
-          identity_a/
+          id_0/
             0001.jpg
-          identity_b/
+            0002.jpg
+          id_1/
             0001.jpg
+            0002.jpg
 
-    Label file is not required. Each folder is treated as one identity class.
+    Label file is not required.
+    Each subfolder is treated as one identity class.
+    All .jpg images in every non-empty identity folder are used.
+
+    No min_images_per_id filtering is applied.
     """
 
-    def __init__(self, root: str, transform=None, min_images_per_id: int = 1):
+    def __init__(self, root: str, transform=None):
         self.root = root
         self.transform = transform
-        self.min_images_per_id = min_images_per_id
 
         if not os.path.isdir(root):
             raise FileNotFoundError(f"Training root not found: {root}")
@@ -62,24 +78,33 @@ class WebFaceFolder(Dataset):
         identities = sorted([
             name for name in os.listdir(root)
             if os.path.isdir(os.path.join(root, name))
-        ])
+        ], key=natural_key)
+
+        if len(identities) == 0:
+            raise RuntimeError(f"No identity folders found under: {root}")
 
         class_idx = 0
+        skipped_empty_folders = []
+
         for identity in identities:
             identity_dir = os.path.join(root, identity)
 
             images = sorted([
                 name for name in os.listdir(identity_dir)
                 if name.lower().endswith(IMG_EXTENSIONS)
-            ])
+            ], key=natural_key)
 
-            if len(images) < min_images_per_id:
+            # Only skip completely empty folders.
+            # Do not filter by min image count.
+            if len(images) == 0:
+                skipped_empty_folders.append(identity)
                 continue
 
             self.class_to_idx[identity] = class_idx
 
             for image_name in images:
-                self.samples.append((os.path.join(identity_dir, image_name), class_idx))
+                image_path = os.path.join(identity_dir, image_name)
+                self.samples.append((image_path, class_idx))
 
             class_idx += 1
 
@@ -87,6 +112,12 @@ class WebFaceFolder(Dataset):
             raise RuntimeError(f"No valid .jpg training images found under: {root}")
 
         self.num_classes = len(self.class_to_idx)
+        self.skipped_empty_folders = skipped_empty_folders
+
+        if self.num_classes <= 1:
+            raise RuntimeError(
+                f"Need at least 2 identity classes for ArcFace training, got {self.num_classes}."
+            )
 
     def __len__(self):
         return len(self.samples)

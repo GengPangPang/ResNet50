@@ -60,7 +60,6 @@ def parse_args():
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--eval_every", type=int, default=1)
     parser.add_argument("--save_every", type=int, default=1)
-    parser.add_argument("--min_images_per_id", type=int, default=1)
 
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--seed", type=int, default=42)
@@ -122,7 +121,6 @@ def main():
     train_set = WebFaceFolder(
         root=args.train_root,
         transform=train_transform(args.image_size),
-        min_images_per_id=args.min_images_per_id,
     )
 
     train_loader, train_sampler = build_loader(
